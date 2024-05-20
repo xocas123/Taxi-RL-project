@@ -104,6 +104,50 @@ def run_simulation_TD5():
 
     return rewards_per_episode
 
+def run_simulation_TDn(n):
+    env = create_taxi_environment()
+    n_states = env.observation_space.n
+    n_actions = env.action_space.n
+
+    agent = TDnAgent(n_states, n_actions, n=n)
+
+    n_episodes = 1000
+    episode_length = 1000
+    rewards_per_episode = []
+
+    for episode in range(n_episodes):
+        state, info = env.reset()
+        total_reward = 0
+        transitions = []
+
+        for _ in range(episode_length):
+            action = agent.choose_action(state)
+            next_state, reward, done, truncated, info = env.step(action)
+            transitions.append((state, action, reward, next_state))
+
+            if len(transitions) == agent.n or done:
+                agent.update_q_values(transitions)
+                transitions = []
+
+            state = next_state
+            total_reward += reward
+
+            if done or truncated:
+                break
+
+        agent.reset_eligibility_traces()
+        rewards_per_episode.append(total_reward)
+
+    print(agent.get_q_table())
+
+    return rewards_per_episode
+
+
+def baysean_optimization():
+    print("tbd")
+
+
+
 def plot_rewards(rewards_per_episode, title):
 
     plt.figure(figsize=(10, 5))
@@ -114,6 +158,7 @@ def plot_rewards(rewards_per_episode, title):
     plt.legend()
     plt.grid(True)
     plt.show()
+    
 
 
 
