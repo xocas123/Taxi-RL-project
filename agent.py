@@ -29,7 +29,6 @@ class TD0Agent:
         return self.q_table
 
 
-
 class MonteCarloAgent:
     def __init__(self, n_states, n_actions, epsilon=0.1):
         self.n_states = n_states
@@ -80,20 +79,60 @@ class TD5Agent:
             return np.argmax(self.q_table[state])  # Exploit
 
     def update_q_values(self, transitions):
-        """ Update Q-values based on n-step transitions """
+        """ Aktualisieren  Q-Werte. Falta arreglar,"""
         for t, (state, action, reward, next_state) in enumerate(transitions):
-            self.eligibility_traces[state][action] += 1  # Update eligibility trace
+            self.eligibility_traces[state][action] += 1 
 
-            # Calculate the n-step return
+            
             n_step_return = sum([self.gamma**i * transitions[i][2] for i in range(len(transitions))])
             if len(transitions) == self.n_step:
                 n_step_return += self.gamma**self.n_step * np.max(self.q_table[next_state])
 
-            # Update Q-values and eligibility traces
+            # Update qval
             td_error = n_step_return - self.q_table[state][action]
             self.q_table += self.alpha * td_error * self.eligibility_traces
 
             # Decay eligibility traces
+            self.eligibility_traces *= self.gamma * 0.9
+
+    def reset_eligibility_traces(self):
+        self.eligibility_traces = np.zeros((self.n_states, self.n_actions))
+
+    def get_q_table(self):
+        return self.q_table
+
+class TDnAgent:
+    def __init__(self, n_states, n_actions, n=1, alpha=0.1, gamma=0.99, epsilon=0.01):
+        self.n_states = n_states
+        self.n_actions = n_actions
+        self.n = n
+        self.alpha = alpha
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.q_table = np.zeros((n_states, n_actions))
+        self.eligibility_traces = np.zeros((n_states, n_actions))
+
+    def choose_action(self, state):
+        if random.uniform(0, 1) < self.epsilon:
+            return random.randint(0, self.n_actions - 1)  # Explore
+        else:
+            return np.argmax(self.q_table[state])  # Exploit
+
+    def update_q_values(self, transitions):
+        """ Update Q-values based on n-step transitions """
+        for t, (state, action, reward, next_state) in enumerate(transitions):
+            self.eligibility_traces[state][action] += 1  
+
+            # n pasos, deveulta
+            n_step_return = sum([self.gamma**i * transitions[i][2] for i in range(len(transitions))])
+            if len(transitions) == self.n:
+                n_step_return += self.gamma**self.n * np.max(self.q_table[next_state])
+
+            # qval & eligib.
+            td_error = n_step_return - self.q_table[state][action]
+            self.q_table[state][action] += self.alpha * td_error * self.eligibility_traces[state][action]
+
+            # decay
             self.eligibility_traces *= self.gamma * 0.9
 
     def reset_eligibility_traces(self):
