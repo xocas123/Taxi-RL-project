@@ -1,6 +1,6 @@
 # run_simulation.py
 from Environment import create_taxi_environment
-from agent import TD0Agent, MonteCarloAgent
+from agent import TD0Agent, MonteCarloAgent, TD5Agent
 import matplotlib.pyplot as plt
 
 def run_simulation_TD0():
@@ -66,7 +66,43 @@ def run_mc_simulation():
 
     return episode_rewards
 
+def run_simulation_TD5():
+    env = create_taxi_environment()
+    n_states = env.observation_space.n
+    n_actions = env.action_space.n
 
+    agent = TD5Agent(n_states, n_actions)
+
+    n_episodes = 1000
+    episode_length = 1000
+    rewards_per_episode = []
+
+    for episode in range(n_episodes):
+        state, info = env.reset()
+        total_reward = 0
+        transitions = []
+
+        for _ in range(episode_length):
+            action = agent.choose_action(state)
+            next_state, reward, done, truncated, info = env.step(action)
+            transitions.append((state, action, reward, next_state))
+
+            if len(transitions) == agent.n_step or done:
+                agent.update_q_values(transitions)
+                transitions = []
+
+            state = next_state
+            total_reward += reward
+
+            if done or truncated:
+                break
+
+        agent.reset_eligibility_traces()
+        rewards_per_episode.append(total_reward)
+
+    print(agent.get_q_table())
+
+    return rewards_per_episode
 
 def plot_rewards(rewards_per_episode, title):
 
@@ -82,8 +118,12 @@ def plot_rewards(rewards_per_episode, title):
 
 
 if __name__ == "__main__":
-    td0_rewards = run_simulation_TD0()
-    plot_rewards(td0_rewards, 'TD0 Agent')
+    #td0_rewards = run_simulation_TD0()
+    #plot_rewards(td0_rewards, 'TD0 Agent')
 
-    mc_rewards = run_mc_simulation()
-    plot_rewards(mc_rewards, 'Monte Carlo Agent')
+    #mc_rewards = run_mc_simulation()
+    #plot_rewards(mc_rewards, 'Monte Carlo Agent')
+    
+    
+    td5_rewards = run_simulation_TD5()
+    plot_rewards(td5_rewards, 'TD5 Agent')

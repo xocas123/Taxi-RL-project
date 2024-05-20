@@ -61,3 +61,43 @@ class MonteCarloAgent:
                 self.returns[state][action].append(G)
                 self.Q[state][action] = np.mean(self.returns[state][action])
                 self.update_policy(state)
+                
+class TD5Agent:
+    def __init__(self, n_states, n_actions, alpha=0.1, gamma=0.99, epsilon=0.01):
+        self.n_states = n_states
+        self.n_actions = n_actions
+        self.alpha = alpha
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.q_table = np.zeros((n_states, n_actions))
+        self.eligibility_traces = np.zeros((n_states, n_actions))
+        self.n_step = 5  # Define the number of steps for TD(n)
+
+    def choose_action(self, state):
+        if random.uniform(0, 1) < self.epsilon:
+            return random.randint(0, self.n_actions - 1)  # Explore
+        else:
+            return np.argmax(self.q_table[state])  # Exploit
+
+    def update_q_values(self, transitions):
+        """ Update Q-values based on n-step transitions """
+        for t, (state, action, reward, next_state) in enumerate(transitions):
+            self.eligibility_traces[state][action] += 1  # Update eligibility trace
+
+            # Calculate the n-step return
+            n_step_return = sum([self.gamma**i * transitions[i][2] for i in range(len(transitions))])
+            if len(transitions) == self.n_step:
+                n_step_return += self.gamma**self.n_step * np.max(self.q_table[next_state])
+
+            # Update Q-values and eligibility traces
+            td_error = n_step_return - self.q_table[state][action]
+            self.q_table += self.alpha * td_error * self.eligibility_traces
+
+            # Decay eligibility traces
+            self.eligibility_traces *= self.gamma * 0.9
+
+    def reset_eligibility_traces(self):
+        self.eligibility_traces = np.zeros((self.n_states, self.n_actions))
+
+    def get_q_table(self):
+        return self.q_table
