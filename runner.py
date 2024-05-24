@@ -1,7 +1,8 @@
 # run_simulation.py
 from Environment import create_taxi_environment
-from agent import TD0Agent, MonteCarloAgent, TD5Agent
+from agent import TD0Agent, MonteCarloAgent, TD5Agent,TDnAgent
 import matplotlib.pyplot as plt
+from hyperopt import fmin, tpe, hp, Trials
 
 def run_simulation_TD0():
     env = create_taxi_environment()
@@ -159,6 +160,59 @@ def plot_rewards(rewards_per_episode, title):
     plt.grid(True)
     plt.show()
     
+def optimize_td_hyperparameters(n, max_evals=20):
+    def objective(params):
+        alpha, gamma, epsilon = params['alpha'], params['gamma'], params['epsilon']
+        env = create_taxi_environment()
+        n_states = env.observation_space.n
+        n_actions = env.action_space.n
+
+        agent = TDnAgent(n_states, n_actions, n=n, alpha=alpha, gamma=gamma, epsilon=epsilon)
+
+        n_episodes = 100
+        episode_length = 1000
+        total_reward = 0
+
+        for episode in range(n_episodes):
+            state, info = env.reset()
+            episode_reward = 0
+            transitions = []
+
+            for _ in range(episode_length):
+                action = agent.choose_action(state)
+                next_state, reward, done, truncated, info = env.step(action)
+                transitions.append((state, action, reward, next_state))
+
+                if len(transitions) == agent.n or done:
+                    agent.update_q_values(transitions)
+                    transitions = []
+
+                state = next_state
+                episode_reward += reward
+
+                if done or truncated:
+                    break
+
+            agent.reset_eligibility_traces()
+            total_reward += episode_reward
+
+        avg_reward = total_reward / n_episodes
+        return -avg_reward
+
+    space = {
+        'alpha': hp.uniform('alpha', 0.01, 1.0),
+        'gamma': hp.uniform('gamma', 0.9, 0.999),
+        'epsilon': hp.uniform('epsilon', 0.01, 0.1)
+    }
+
+    trials = Trials()
+    best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
+
+    print("Best hyperparameters found: Alpha={}, Gamma={}, Epsilon={}".format(
+        best['alpha'], best['gamma'], best['epsilon']))
+
+    return best
+    
 
 
 
@@ -170,5 +224,7 @@ if __name__ == "__main__":
     #plot_rewards(mc_rewards, 'Monte Carlo Agent')
     
     
-    td5_rewards = run_simulation_TD5()
-    plot_rewards(td5_rewards, 'TD5 Agent')
+    #td5_rewards = run_simulation_TD5()
+    #plot_rewards(td5_rewards, 'TD5 Agent')
+    
+    best_result = optimize_td_hyperparameters(n=5, max_evals=20)
