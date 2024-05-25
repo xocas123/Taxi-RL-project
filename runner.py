@@ -38,9 +38,9 @@ def run_simulation_TD0():
     return rewards_per_episode
 
 # run_mc_simulation.py
-def run_mc_simulation():
+def run_mc_simulation(epsilon=0.1):
     env = create_taxi_environment()
-    agent = MonteCarloAgent(env.observation_space.n, env.action_space.n)
+    agent = MonteCarloAgent(env.observation_space.n, env.action_space.n, epsilon=epsilon)
     episode_length = 1000
     num_episodes = 100
     episode_rewards = []
@@ -58,7 +58,7 @@ def run_mc_simulation():
             episode_transitions.append((state, action, reward))
             state = next_state
             total_reward += reward
-            if done:
+            if done or truncated:
                 break
 
         agent.update_Q(episode_transitions)
@@ -144,8 +144,6 @@ def run_simulation_TDn(n):
     return rewards_per_episode
 
 
-def baysean_optimization():
-    print("tbd")
 
 
 
@@ -212,6 +210,24 @@ def optimize_td_hyperparameters(n, max_evals=20):
         best['alpha'], best['gamma'], best['epsilon']))
 
     return best
+
+def optimize_mc_hyperparameters(max_evals=20):
+    def objective(params):
+        epsilon = params['epsilon']
+        total_reward = sum(run_mc_simulation(epsilon=epsilon))
+        avg_reward = total_reward / 100
+        return -avg_reward  # Minimize negative reward to maximize reward
+
+    space = {
+        'epsilon': hp.uniform('epsilon', 0.01, 0.1)
+    }
+
+    trials = Trials()
+    best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
+
+    print("Best epsilon found: epsilon={}".format(best['epsilon']))
+
+    return best
     
 
 
@@ -227,4 +243,6 @@ if __name__ == "__main__":
     #td5_rewards = run_simulation_TD5()
     #plot_rewards(td5_rewards, 'TD5 Agent')
     
-    best_result = optimize_td_hyperparameters(n=5, max_evals=20)
+    #best_result = optimize_td_hyperparameters(n=250, max_evals=20)
+    
+    best_mc_hyperparameters = optimize_mc_hyperparameters()

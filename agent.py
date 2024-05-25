@@ -62,7 +62,7 @@ class MonteCarloAgent:
                 self.update_policy(state)
                 
 class TD5Agent:
-    def __init__(self, n_states, n_actions, alpha=0.1, gamma=0.99, epsilon=0.01):
+    def __init__(self, n_states, n_actions, alpha=0.5806710588745084, gamma=0.900008100666167, epsilon=0.033950915139724314):
         self.n_states = n_states
         self.n_actions = n_actions
         self.alpha = alpha
