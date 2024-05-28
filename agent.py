@@ -1,4 +1,3 @@
-# td0_agent.py
 import numpy as np
 import random
 
@@ -84,7 +83,7 @@ class MonteCarloAgent:
 
 
 class TD5Agent:
-    def __init__(self, n_states, n_actions, alpha=0.5806710588745084, gamma=0.900008100666167, epsilon=0.033950915139724314):
+    def __init__(self, n_states, n_actions, alpha=0.1, gamma=0.99, epsilon=0.01):
         self.n_states = n_states
         self.n_actions = n_actions
         self.alpha = alpha
@@ -124,7 +123,7 @@ class TD5Agent:
 
 
 class TDnAgent:
-    def __init__(self, n_states, n_actions, n=1, alpha=0.1, gamma=0.99, epsilon=0.01):
+    def __init__(self, n_states, n_actions, alpha, epsilon, n=1, gamma=0.99):
         self.n_states = n_states
         self.n_actions = n_actions
         self.n = n
@@ -134,13 +133,13 @@ class TDnAgent:
         self.q_table = np.zeros((n_states, n_actions))
         self.eligibility_traces = np.zeros((n_states, n_actions))
 
-    def choose_action(self, state):
+    def select_action(self, state):
         if random.uniform(0, 1) < self.epsilon:
             return random.randint(0, self.n_actions - 1)  # Explore
         else:
             return np.argmax(self.q_table[state])  # Exploit
 
-    def update_q_values(self, transitions):
+    def update_q_value(self, transitions):
         """ Update Q-values based on n-step transitions """
         for t, (state, action, reward, next_state) in enumerate(transitions):
             self.eligibility_traces[state][action] += 1
