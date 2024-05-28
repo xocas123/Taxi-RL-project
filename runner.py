@@ -325,7 +325,7 @@ def optimize_mc_hyperparameters(max_evals=20):
         epsilon = params['epsilon']
         total_reward = sum(run_mc_simulation(epsilon=epsilon))
         avg_reward = total_reward / 100
-        return -avg_reward  # Minimize negative reward to maximize reward
+        return -avg_reward  
 
     space = {
         'epsilon': hp.uniform('epsilon', 0.01, 0.1)
@@ -337,6 +337,26 @@ def optimize_mc_hyperparameters(max_evals=20):
     print("Best epsilon found: epsilon={}".format(best['epsilon']))
 
     return best
+
+def timestep_optimization(max_evals=20):
+    def objective(params):
+        n = int(params['n'])
+        total_reward = sum(run_simulation_TDn(n))
+        avg_reward = total_reward / 1000  
+        return -avg_reward  
+
+    space = {
+        'n': hp.quniform('n', 0, 1000, 1)
+    }
+
+    trials = Trials()
+    best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
+
+    print("Best number of timesteps found: n={}".format(int(best['n'])))
+
+    return best
+
+
 
 
 if __name__ == "__main__":
